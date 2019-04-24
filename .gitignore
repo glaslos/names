@@ -1,0 +1,11 @@
+# Mr. Developer
+.vscode/
+.idea/
+
+# Artifacts
+names
+*.dump
+*.log*
+
+# Research
+trie_bench/
