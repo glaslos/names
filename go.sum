@@ -11,10 +11,14 @@ github.com/fvbock/trie v0.0.0-20140409041417-1d40233c66bd h1:XnGKLzvpSsN8Y3TJeez
 github.com/fvbock/trie v0.0.0-20140409041417-1d40233c66bd/go.mod h1:vy4w5UkO+5iVasHRE6T3lQvu5gqnszyEej6hx3dsNGE=
 github.com/fvbock/uds-go v0.0.0-20150825055119-e378dd1356b9 h1:PI8D0UwtC04m+FUaqB8RPOeuicjr896/afA5jlvpojA=
 github.com/fvbock/uds-go v0.0.0-20150825055119-e378dd1356b9/go.mod h1:J+KQJ2ZNVvd2gibb4nuUJbXVCSdKCFGn0ch/FI9xPlw=
+github.com/google/go-cmp v0.2.0 h1:+dTQ8DZQJz0Mb/HjFlkptS1FeQ4cWSnN941F8aEG4SQ=
+github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/importcjj/trie-go v0.0.0-20160919093426-b824e112ac91 h1:U3iWJy2U/UJg0L3ceZqcopFoqQzUnTlfUvtPD7a85q0=
 github.com/importcjj/trie-go v0.0.0-20160919093426-b824e112ac91/go.mod h1:+kbMP4Qz30rNMD9ihE6wruOpRvO2Vt1735w7UMRn0AE=
 github.com/miekg/dns v1.1.6 h1:jVwb4GDwD65q/gtItR/lIZHjNH93QfeGxZUkzJcW9mc=
 github.com/miekg/dns v1.1.6/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
+github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
+github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/rs/zerolog v1.13.0 h1:hSNcYHyxDWycfePW7pUI8swuFkcSMPKh3E63Pokg1Hk=
 github.com/rs/zerolog v1.13.0/go.mod h1:YbFCdg8HfsridGWAh22vktObvhZbQsZXe4/zB0OKkWU=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2 h1:VklqNMn3ovrHsnt90PveolxSbWFaJdECFbxSq0Mqo2M=
@@ -33,3 +37,5 @@ gopkg.in/natefinch/lumberjack.v2 v2.0.0 h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXL
 gopkg.in/natefinch/lumberjack.v2 v2.0.0/go.mod h1:l0ndWWf7gzL7RNwBG7wST/UCcT4T24xpD6X8LsfU/+k=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gotest.tools v2.2.0+incompatible h1:VsBPFP1AI068pPrMxtb/S8Zkgf9xEmTLJjfM+P5UIEo=
+gotest.tools v2.2.0+incompatible/go.mod h1:DsYFclhRJ6vuDpmuTbkuFWG+y2sxOXAzmJt81HFBacw=

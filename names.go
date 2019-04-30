@@ -5,7 +5,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/fvbock/trie"
@@ -167,7 +166,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 		return
 	}
 
-	if n.tree.Has(strings.Trim(msg.Question[0].Name, ".")) {
+	if n.isBlacklisted(msg.Question[0].Name) {
 		n.Log.Printf("%s did hit the blacklist", msg.Question[0].Name)
 		RR, err := dns.NewRR(fmt.Sprintf("%s 3600 IN A 127.0.0.1", msg.Question[0].Name))
 		if err != nil {
