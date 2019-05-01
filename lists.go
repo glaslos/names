@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/fvbock/trie"
+	"github.com/glaslos/trie"
 	"github.com/rs/zerolog"
 )
 

@@ -11,6 +11,8 @@ github.com/fvbock/trie v0.0.0-20140409041417-1d40233c66bd h1:XnGKLzvpSsN8Y3TJeez
 github.com/fvbock/trie v0.0.0-20140409041417-1d40233c66bd/go.mod h1:vy4w5UkO+5iVasHRE6T3lQvu5gqnszyEej6hx3dsNGE=
 github.com/fvbock/uds-go v0.0.0-20150825055119-e378dd1356b9 h1:PI8D0UwtC04m+FUaqB8RPOeuicjr896/afA5jlvpojA=
 github.com/fvbock/uds-go v0.0.0-20150825055119-e378dd1356b9/go.mod h1:J+KQJ2ZNVvd2gibb4nuUJbXVCSdKCFGn0ch/FI9xPlw=
+github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f h1:1btkc4YwPsFeSGNsBLPkHigD+A4aFZusEtdRpDoWiwA=
+github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f/go.mod h1:4iSrOq27By1AelYZoGItZhOHCES1ar9fe5aegY/Yo2Q=
 github.com/google/go-cmp v0.2.0 h1:+dTQ8DZQJz0Mb/HjFlkptS1FeQ4cWSnN941F8aEG4SQ=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/importcjj/trie-go v0.0.0-20160919093426-b824e112ac91 h1:U3iWJy2U/UJg0L3ceZqcopFoqQzUnTlfUvtPD7a85q0=

@@ -1,10 +1,11 @@
 package names
 
 import (
-	"github.com/fvbock/trie"
+	"testing"
+
+	"github.com/glaslos/trie"
 	"github.com/rs/zerolog"
 	"gotest.tools/assert"
-	"testing"
 )
 
 func TestLists(t *testing.T) {

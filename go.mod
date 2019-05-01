@@ -6,7 +6,7 @@ require (
 	github.com/derekparker/trie v0.0.0-20180212171413-e608c2733dc7
 	github.com/dghubble/trie v0.0.0-20190305093130-56ce8b33a915
 	github.com/fvbock/trie v0.0.0-20140409041417-1d40233c66bd
-	github.com/fvbock/uds-go v0.0.0-20150825055119-e378dd1356b9 // indirect
+	github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/importcjj/trie-go v0.0.0-20160919093426-b824e112ac91
 	github.com/miekg/dns v1.1.6

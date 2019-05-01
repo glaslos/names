@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/fvbock/trie"
+	"github.com/glaslos/trie"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/diode"
