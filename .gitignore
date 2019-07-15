@@ -6,3 +6,4 @@
 names
 *.dump
 *.log*
+dist
