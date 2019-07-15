@@ -6,6 +6,3 @@
 names
 *.dump
 *.log*
-
-# Research
-trie_bench/

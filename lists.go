@@ -51,8 +51,7 @@ func ReverseString(text string) string {
 }
 
 func (n *Names) isBlacklisted(name string) bool {
-	name = ReverseString(strings.Trim(name, "."))
-	return n.tree.Has(name)
+	return n.tree.Has(ReverseString(strings.Trim(name, ".")))
 }
 
 func dumpLists(tree *trie.Trie) error {
@@ -82,7 +81,7 @@ func fetchLists(log *zerolog.Logger, tree *trie.Trie) error {
 			} else {
 				line = fields[0]
 			}
-			line = ReverseString(line)
+			line = ReverseString(strings.Trim(line, "."))
 			if !tree.Has(line) {
 				tree.Add(line)
 			}

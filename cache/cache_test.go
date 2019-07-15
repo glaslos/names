@@ -1,12 +1,13 @@
-package names
+package cache
 
 import (
-	"github.com/miekg/dns"
 	"testing"
+
+	"github.com/miekg/dns"
 )
 
 func TestCache(t *testing.T) {
-	cache := InitCache(1000)
+	cache := New(Config{ExpirationTime: 1000})
 	cache.Set("1", Element{Value: []dns.RR{}})
 	cache.Get("1")
 }

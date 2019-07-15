@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/glaslos/names/cache"
 	"github.com/glaslos/trie"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
@@ -17,7 +18,7 @@ import (
 
 // Names main struct
 type Names struct {
-	cache     Cache
+	cache     *cache.Cache
 	dnsClient dns.Client
 	tree      *trie.Trie
 	Log       *zerolog.Logger
@@ -36,7 +37,7 @@ func (s *Server) stop() error {
 }
 
 // Serve responses to DNS requests
-func (n *Names) Serve() {
+func (n *Names) serve() {
 	n.Log.Print(os.Getpid())
 L:
 	for {
@@ -77,6 +78,13 @@ func makeLogger() *zerolog.Logger {
 	return &log.Logger
 }
 
+func (n *Names) refreshCacheFunc(cache *cache.Cache) {
+	for domain, element := range cache.Elements {
+		resp := n.resolveUpstream(element.Request)
+		n.cache.Set(domain, resp)
+	}
+}
+
 // New Names instance
 func New() *Names {
 	n := &Names{
@@ -84,12 +92,18 @@ func New() *Names {
 			Net:     "tcp-tls",
 			Timeout: time.Duration(10) * time.Second,
 		},
-		cache: InitCache(100 * 1000000000),
-		Log:   makeLogger(),
-		tree:  trie.NewTrie(),
+		Log:  makeLogger(),
+		tree: trie.NewTrie(),
 	}
+	n.cache = cache.New(cache.Config{
+		ExpirationTime:  (100 * time.Millisecond).Nanoseconds(),
+		RefreshInterval: 10 * time.Second,
+		RefreshFunc:     n.refreshCacheFunc,
+	})
 	// update the blacklists
-	fetchLists(n.Log, n.tree)
+	if err := fetchLists(n.Log, n.tree); err != nil {
+		n.Log.Fatal().Err(err)
+	}
 	// create the listener
 	pc, err := CreateOrImportListener("127.0.0.1:53")
 	if err != nil {
@@ -98,12 +112,12 @@ func New() *Names {
 
 	n.Log.Print("serving on 127.0.0.1:53")
 	n.server = &Server{PC: pc, Done: make(chan (bool))}
-	go n.Serve()
 	return n
 }
 
 // Run the server
 func (n *Names) Run() {
+	go n.serve()
 	defer n.server.PC.Close()
 	err := WaitForSignals("127.0.0.1:53", n.server.PC, n.server)
 	if err != nil {
@@ -174,7 +188,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 			return
 		}
 		msg.Answer = append(msg.Answer, RR)
-		element := Element{Value: msg.Answer, Refresh: false}
+		element := cache.Element{Value: msg.Answer, Refresh: false}
 		n.cache.Set(msg.Question[0].Name, element)
 		if err = n.packAndWrite(msg, pc, addr); err != nil {
 			n.Log.Error().Err(err)
