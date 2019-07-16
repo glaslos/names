@@ -64,7 +64,7 @@ func CreateOrImportListener(addr string) (net.PacketConn, error) {
 	// Try and import a listener for addr. If it's found, use it.
 	ln, err := importListener(addr)
 	if err == nil {
-		log.Printf("Imported listener file descriptor for %v", addr)
+		log.Printf("imported listener file descriptor for %v", addr)
 		return ln, nil
 	}
 
@@ -74,7 +74,7 @@ func CreateOrImportListener(addr string) (net.PacketConn, error) {
 		return nil, err
 	}
 
-	log.Printf("Created listener file descriptor for %v", addr)
+	log.Printf("created listener file descriptor for %v", addr)
 	return ln, nil
 }
 
@@ -149,10 +149,10 @@ func WaitForSignals(addr string, conn net.PacketConn, server *Server) error {
 				// Fork a child process.
 				p, err := forkChild(addr, conn)
 				if err != nil {
-					log.Printf("Unable to fork child: %v", err)
+					log.Printf("unable to fork child: %v", err)
 					continue
 				}
-				log.Printf("Forked child %v", p.Pid)
+				log.Printf("forked child %v", p.Pid)
 
 				// Create a context that will expire in 5 seconds and use this as a
 				// timeout to Shutdown.
@@ -165,12 +165,12 @@ func WaitForSignals(addr string, conn net.PacketConn, server *Server) error {
 				// Fork a child process.
 				p, err := forkChild(addr, conn)
 				if err != nil {
-					log.Printf("Unable to fork child: %v", err)
+					log.Printf("unable to fork child: %v", err)
 					continue
 				}
 
 				// Print the PID of the forked process and keep waiting for more signals.
-				log.Printf("Forked child %v", p.Pid)
+				log.Printf("forked child %v", p.Pid)
 			case syscall.SIGINT, syscall.SIGQUIT:
 				// Create a context that will expire in 5 seconds and use this as a
 				// timeout to Shutdown.

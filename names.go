@@ -38,7 +38,7 @@ func (s *Server) stop() error {
 
 // Serve responses to DNS requests
 func (n *Names) serve() {
-	n.Log.Print(os.Getpid())
+	n.Log.Print("PID: ", os.Getpid())
 L:
 	for {
 		n.server.PC.SetDeadline(time.Now().Add(time.Duration(1) * time.Second))
@@ -59,7 +59,7 @@ L:
 			go n.handleUDP(buf[:i], n.server.PC, addr)
 		}
 	}
-	n.Log.Print("Loop closed")
+	n.Log.Print("loop closed")
 }
 
 func makeLogger() *zerolog.Logger {
@@ -122,7 +122,7 @@ func (n *Names) Run() {
 	defer n.server.PC.Close()
 	err := WaitForSignals("127.0.0.1:53", n.server.PC, n.server)
 	if err != nil {
-		n.Log.Printf("Exiting: %v\n", err)
+		n.Log.Printf("exiting: %v\n", err)
 		return
 	}
 }

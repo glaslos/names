@@ -7,5 +7,5 @@ import (
 func main() {
 	n := names.New()
 	n.Run()
-	n.Log.Printf("Exiting.\n")
+	n.Log.Printf("exiting.\n")
 }
