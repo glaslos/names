@@ -101,7 +101,8 @@ func New() *Names {
 		RefreshFunc:     n.refreshCacheFunc,
 	})
 	// update the blacklists
-	if err := fetchLists(n.Log, n.tree); err != nil {
+	var err error
+	if n.tree, err = fetchLists(n.Log, n.tree); err != nil {
 		n.Log.Fatal().Err(err)
 	}
 	// create the listener
@@ -188,7 +189,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 			return
 		}
 		msg.Answer = append(msg.Answer, RR)
-		element := cache.Element{Value: msg.Answer, Refresh: false}
+		element := cache.Element{Value: msg.Answer, Refresh: false, Request: msg}
 		n.cache.Set(msg.Question[0].Name, element)
 		if err = n.packAndWrite(msg, pc, addr); err != nil {
 			n.Log.Error().Err(err)
@@ -200,7 +201,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 	element := n.resolveUpstream(msg)
 	element.Refresh = true
 	n.cache.Set(msg.Question[0].Name, element)
-	n.Log.Print(msg.Question[0].Name, element.Resolver)
+	//n.Log.Print(msg.Question[0].Name, " ", msg.Question[0].Qtype, " ", element.Value[0].String(), " ", element.Resolver)
 
 	n.packAndWrite(msg, pc, addr)
 }

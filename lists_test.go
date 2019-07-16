@@ -11,7 +11,7 @@ import (
 func TestLists(t *testing.T) {
 	tree := trie.NewTrie()
 	logger := zerolog.Nop()
-	if err := fetchLists(&logger, tree); err != nil {
+	if _, err := fetchLists(&logger, tree); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -38,7 +38,7 @@ func TestContaints(t *testing.T) {
 
 func TestPrefix(t *testing.T) {
 	tree := trie.NewTrie()
-	tree.Add(ReverseString("google.com"))
+	tree.Add(ReverseString("*.google.com"))
 	if len(tree.PrefixMembers(ReverseString("google.com"))) <= 0 {
 		t.Fatal("expected entry")
 	}

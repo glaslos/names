@@ -58,7 +58,7 @@ func dumpLists(tree *trie.Trie) error {
 	return tree.DumpToFile("lists.dump")
 }
 
-func fetchLists(log *zerolog.Logger, tree *trie.Trie) error {
+func fetchLists(log *zerolog.Logger, tree *trie.Trie) (*trie.Trie, error) {
 	var err error
 	tree, err = trie.LoadFromFile("lists.dump")
 	if err != nil {
@@ -67,7 +67,7 @@ func fetchLists(log *zerolog.Logger, tree *trie.Trie) error {
 	}
 	resp, err := http.Get("http://sysctl.org/cameleon/hosts")
 	if err != nil {
-		return err
+		return tree, err
 	}
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
@@ -87,5 +87,5 @@ func fetchLists(log *zerolog.Logger, tree *trie.Trie) error {
 			}
 		}
 	}
-	return dumpLists(tree)
+	return tree, dumpLists(tree)
 }

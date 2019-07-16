@@ -30,3 +30,6 @@ upx:
 .PHONY: build_release
 build_release: clean
 	cd app; gox -arch="amd64" -os="windows darwin linux" -output="../dist/$(NAME)-{{.Arch}}-{{.OS}}" -ldflags=$(LDFLAGS)
+
+run:
+	go build -o names app/app.go; sudo ./names; rm names
