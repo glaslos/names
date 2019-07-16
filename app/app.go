@@ -5,7 +5,10 @@ import (
 )
 
 func main() {
-	n := names.New()
+	n, err := names.New()
+	if err != nil {
+		panic(err)
+	}
 	n.Run()
 	n.Log.Printf("exiting.\n")
 }

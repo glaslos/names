@@ -1,4 +1,4 @@
-package names
+package listener
 
 import (
 	"encoding/json"
@@ -55,7 +55,7 @@ func importListener(addr string) (net.PacketConn, error) {
 	return ln, nil
 }
 
-func createListener(addr string) (net.PacketConn, error) {
+func CreateListener(addr string) (net.PacketConn, error) {
 	return net.ListenPacket("udp", addr)
 }
 
@@ -69,7 +69,7 @@ func CreateOrImportListener(addr string) (net.PacketConn, error) {
 	}
 
 	// No listener was imported, that means this process has to create one.
-	ln, err = createListener(addr)
+	ln, err = CreateListener(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +136,13 @@ func forkChild(addr string, conn net.PacketConn) (*os.Process, error) {
 	return p, nil
 }
 
+// Server to be passed to the wait function
+type Server interface {
+	Stop() error
+}
+
 // WaitForSignals handles signals
-func WaitForSignals(addr string, conn net.PacketConn, server *Server) error {
+func WaitForSignals(addr string, conn net.PacketConn, server Server) error {
 	signalCh := make(chan os.Signal, 1024)
 	signal.Notify(signalCh, syscall.SIGHUP, syscall.SIGUSR2, syscall.SIGINT, syscall.SIGQUIT)
 	for {
@@ -160,7 +165,7 @@ func WaitForSignals(addr string, conn net.PacketConn, server *Server) error {
 				// defer cancel()
 
 				// Return any errors during shutdown.
-				return server.stop()
+				return server.Stop()
 			case syscall.SIGUSR2:
 				// Fork a child process.
 				p, err := forkChild(addr, conn)
@@ -176,7 +181,7 @@ func WaitForSignals(addr string, conn net.PacketConn, server *Server) error {
 				// timeout to Shutdown.
 
 				// Return any errors during shutdown.
-				return server.stop()
+				return server.Stop()
 			}
 		}
 	}

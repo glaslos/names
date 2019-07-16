@@ -5,11 +5,14 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/glaslos/names/cache"
 	"github.com/glaslos/trie"
 	"github.com/miekg/dns"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/diode"
 	"github.com/rs/zerolog/log"
@@ -86,7 +89,7 @@ func (n *Names) refreshCacheFunc(cache *cache.Cache) {
 }
 
 // New Names instance
-func New() *Names {
+func New() (*Names, error) {
 	n := &Names{
 		dnsClient: dns.Client{
 			Net:     "tcp-tls",
@@ -95,36 +98,48 @@ func New() *Names {
 		Log:  makeLogger(),
 		tree: trie.NewTrie(),
 	}
-	n.cache = cache.New(cache.Config{
+	var err error
+	n.cache, err = cache.New(cache.Config{
 		ExpirationTime:  (100 * time.Millisecond).Nanoseconds(),
 		RefreshInterval: 10 * time.Second,
 		RefreshFunc:     n.refreshCacheFunc,
+		Persist:         false,
 	})
+	if err != nil {
+		return n, errors.Wrap(err, "failed to setup cache")
+	}
 	// update the blacklists
-	var err error
 	if n.tree, err = fetchLists(n.Log, n.tree); err != nil {
-		n.Log.Fatal().Err(err)
+		return n, errors.Wrap(err, "failed to fetch and update blacklist")
 	}
 	// create the listener
-	pc, err := CreateOrImportListener("127.0.0.1:53")
+	pc, err := CreateListener("127.0.0.1:53")
 	if err != nil {
-		n.Log.Fatal().Err(err)
+		return n, errors.Wrap(err, "failed to create listener")
 	}
 
 	n.Log.Print("serving on 127.0.0.1:53")
 	n.server = &Server{PC: pc, Done: make(chan (bool))}
-	return n
+	return n, nil
+}
+
+// WaitForSignals blocks until interrupted
+func WaitForSignals() {
+	var stopChan = make(chan os.Signal, 2)
+	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	<-stopChan // wait for SIGINT
+}
+
+// CreateListener returns a UDP listener
+func CreateListener(addr string) (net.PacketConn, error) {
+	return net.ListenPacket("udp", addr)
 }
 
 // Run the server
 func (n *Names) Run() {
 	go n.serve()
-	defer n.server.PC.Close()
-	err := WaitForSignals("127.0.0.1:53", n.server.PC, n.server)
-	if err != nil {
-		n.Log.Printf("exiting: %v\n", err)
-		return
-	}
+	WaitForSignals()
+	n.server.PC.Close()
 }
 
 func (n *Names) packAndWrite(msg *dns.Msg, pc net.PacketConn, addr net.Addr) error {
