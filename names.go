@@ -25,33 +25,46 @@ type Names struct {
 	dnsClient dns.Client
 	tree      *trie.Trie
 	Log       *zerolog.Logger
-	server    *Server
+	PC        net.PacketConn
+	Done      chan bool
 }
 
-// Server is a UDP DNS server
-type Server struct {
-	PC   net.PacketConn
-	Done chan bool
+// Config for names
+type Config struct {
+	ListenerAddress  string
+	CacheConfig      *cache.Config
+	LoggerConfig     *LoggerConfig
+	DNSClientNet     string
+	DNSClientTimeout time.Duration
 }
 
-func (s *Server) stop() error {
-	s.Done <- true
+// LoggerConfig for creating the logger
+type LoggerConfig struct {
+	Filename   string
+	MaxSize    int
+	MaxBackups int
+	MaxAge     int
+	Compress   bool
+}
+
+func (n *Names) stop() error {
+	n.Done <- true
 	return nil
 }
 
-// Serve responses to DNS requests
+// serve responses to DNS requests
 func (n *Names) serve() {
 	n.Log.Print("PID: ", os.Getpid())
 L:
 	for {
-		n.server.PC.SetDeadline(time.Now().Add(time.Duration(1) * time.Second))
+		n.PC.SetDeadline(time.Now().Add(time.Duration(1) * time.Second))
 		select {
-		case <-n.server.Done:
+		case <-n.Done:
 			break L
 		default:
 			// read the query, shouldn't be more than 1024 bytes :grimace:
 			buf := make([]byte, 1024)
-			i, addr, err := n.server.PC.ReadFrom(buf)
+			i, addr, err := n.PC.ReadFrom(buf)
 			if err != nil {
 				if e, ok := err.(net.Error); ok && e.Timeout() {
 					continue
@@ -59,19 +72,19 @@ L:
 				n.Log.Print(err)
 				break L
 			}
-			go n.handleUDP(buf[:i], n.server.PC, addr)
+			go n.handleUDP(buf[:i], n.PC, addr)
 		}
 	}
 	n.Log.Print("loop closed")
 }
 
-func makeLogger() *zerolog.Logger {
+func makeLogger(config *LoggerConfig) *zerolog.Logger {
 	file := &lumberjack.Logger{
-		Filename:   "./names.log",
-		MaxSize:    500, // megabytes
-		MaxBackups: 3,
-		MaxAge:     28,   //days
-		Compress:   true, // disabled by default
+		Filename:   config.Filename,
+		MaxSize:    config.MaxSize,
+		MaxBackups: config.MaxBackups,
+		MaxAge:     config.MaxAge,
+		Compress:   config.Compress,
 	}
 	multi := io.MultiWriter(file, os.Stdout)
 	wr := diode.NewWriter(multi, 1000, 10*time.Millisecond, func(missed int) {
@@ -89,22 +102,17 @@ func (n *Names) refreshCacheFunc(cache *cache.Cache) {
 }
 
 // New Names instance
-func New() (*Names, error) {
+func New(config *Config) (*Names, error) {
 	n := &Names{
 		dnsClient: dns.Client{
-			Net:     "tcp-tls",
-			Timeout: time.Duration(10) * time.Second,
+			Net:     config.DNSClientNet,
+			Timeout: config.DNSClientTimeout,
 		},
-		Log:  makeLogger(),
+		Log:  makeLogger(config.LoggerConfig),
 		tree: trie.NewTrie(),
 	}
 	var err error
-	n.cache, err = cache.New(cache.Config{
-		ExpirationTime:  (100 * time.Millisecond).Nanoseconds(),
-		RefreshInterval: 10 * time.Second,
-		RefreshFunc:     n.refreshCacheFunc,
-		Persist:         false,
-	})
+	n.cache, err = cache.New(*config.CacheConfig)
 	if err != nil {
 		return n, errors.Wrap(err, "failed to setup cache")
 	}
@@ -113,13 +121,12 @@ func New() (*Names, error) {
 		return n, errors.Wrap(err, "failed to fetch and update blacklist")
 	}
 	// create the listener
-	pc, err := CreateListener("127.0.0.1:53")
+	n.PC, err = CreateListener(config.ListenerAddress)
 	if err != nil {
 		return n, errors.Wrap(err, "failed to create listener")
 	}
-
-	n.Log.Print("serving on 127.0.0.1:53")
-	n.server = &Server{PC: pc, Done: make(chan (bool))}
+	n.Done = make(chan (bool))
+	n.Log.Print("serving on ", config.ListenerAddress)
 	return n, nil
 }
 
@@ -139,7 +146,7 @@ func CreateListener(addr string) (net.PacketConn, error) {
 func (n *Names) Run() {
 	go n.serve()
 	WaitForSignals()
-	n.server.PC.Close()
+	n.PC.Close()
 }
 
 func (n *Names) packAndWrite(msg *dns.Msg, pc net.PacketConn, addr net.Addr) error {
