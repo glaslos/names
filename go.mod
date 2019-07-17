@@ -2,7 +2,6 @@ module github.com/glaslos/names
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/davecgh/go-spew v1.1.1
 	github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/miekg/dns v1.1.6
