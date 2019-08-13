@@ -1,9 +1,13 @@
 package names
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/glaslos/names/cache"
+)
 
 func TestBlacklisted(t *testing.T) {
-	n, err := New()
+	n, err := New(&Config{LoggerConfig: &LoggerConfig{}, CacheConfig: &cache.Config{}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/glaslos/names/cache"
+	"github.com/spf13/viper"
+
 	"github.com/glaslos/trie"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
@@ -88,9 +90,9 @@ func makeLogger(config *LoggerConfig) *zerolog.Logger {
 	}
 	multi := io.MultiWriter(file, os.Stdout)
 	wr := diode.NewWriter(multi, 1000, 10*time.Millisecond, func(missed int) {
-		fmt.Printf("Logger Dropped %d messages", missed)
+		fmt.Printf("logger dropped %d messages", missed)
 	})
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: wr})
+	log.Logger = log.Output(wr)
 	return &log.Logger
 }
 
@@ -99,6 +101,11 @@ func (n *Names) refreshCacheFunc(cache *cache.Cache) {
 		resp := n.resolveUpstream(element.Request)
 		n.cache.Set(domain, resp)
 	}
+}
+
+// CreateListener returns a UDP listener
+func CreateListener(addr string) (net.PacketConn, error) {
+	return net.ListenPacket("udp", addr)
 }
 
 // New Names instance
@@ -112,12 +119,13 @@ func New(config *Config) (*Names, error) {
 		tree: trie.NewTrie(),
 	}
 	var err error
+	config.CacheConfig.RefreshFunc = n.refreshCacheFunc
 	n.cache, err = cache.New(*config.CacheConfig)
 	if err != nil {
 		return n, errors.Wrap(err, "failed to setup cache")
 	}
 	// update the blacklists
-	if n.tree, err = fetchLists(n.Log, n.tree); err != nil {
+	if n.tree, err = loadLists(n.Log, n.tree, viper.GetBool("fetch-lists")); err != nil {
 		return n, errors.Wrap(err, "failed to fetch and update blacklist")
 	}
 	// create the listener
@@ -131,21 +139,16 @@ func New(config *Config) (*Names, error) {
 }
 
 // WaitForSignals blocks until interrupted
-func WaitForSignals() {
+func waitForSignals() {
 	var stopChan = make(chan os.Signal, 2)
 	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	<-stopChan // wait for SIGINT
 }
 
-// CreateListener returns a UDP listener
-func CreateListener(addr string) (net.PacketConn, error) {
-	return net.ListenPacket("udp", addr)
-}
-
 // Run the server
 func (n *Names) Run() {
 	go n.serve()
-	WaitForSignals()
+	waitForSignals()
 	n.PC.Close()
 }
 
@@ -223,7 +226,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 	element := n.resolveUpstream(msg)
 	element.Refresh = true
 	n.cache.Set(msg.Question[0].Name, element)
-	//n.Log.Print(msg.Question[0].Name, " ", msg.Question[0].Qtype, " ", element.Value[0].String(), " ", element.Resolver)
+	n.Log.Debug().Str("query", msg.Question[0].Name).Str("resolver", element.Resolver).Msg("resolved")
 
 	n.packAndWrite(msg, pc, addr)
 }

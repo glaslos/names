@@ -58,12 +58,15 @@ func dumpLists(tree *trie.Trie) error {
 	return tree.DumpToFile("lists.dump")
 }
 
-func fetchLists(log *zerolog.Logger, tree *trie.Trie) (*trie.Trie, error) {
+func loadLists(log *zerolog.Logger, tree *trie.Trie, fetchFesh bool) (*trie.Trie, error) {
 	var err error
 	tree, err = trie.LoadFromFile("lists.dump")
 	if err != nil {
 		log.Error().Err(err)
 		tree = trie.NewTrie()
+	}
+	if !fetchFesh {
+		return tree, nil
 	}
 	resp, err := http.Get("http://sysctl.org/cameleon/hosts")
 	if err != nil {
