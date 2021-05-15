@@ -168,7 +168,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 	msg := new(dns.Msg)
 	var err error
 	if err := msg.Unpack(buf); err != nil {
-		n.Log.Error().Err(err)
+		n.Log.Error().Err(err).Msg("failed to unpack request")
 		return
 	}
 
@@ -176,7 +176,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 		n.Log.Print(msg.Question[0].Name)
 		RR, err := dns.NewRR(fmt.Sprintf("%s 3600 IN A 127.0.0.1", msg.Question[0].Name))
 		if err != nil {
-			n.Log.Error().Err(err)
+			n.Log.Error().Err(err).Msg("failed to create local. response")
 			return
 		}
 		msg.Answer = append(msg.Answer, RR)
@@ -189,7 +189,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 
 	if element, cacheHit := n.cache.Get(msg.Question[0].Name); cacheHit {
 		msg.Answer = element.Value
-		n.Log.Printf("%s did hit the cache", msg.Question[0].Name)
+		n.Log.Debug().Msgf("cache hit: %s", msg.Question[0].Name)
 		if err = n.packAndWrite(msg, pc, addr); err != nil {
 			n.Log.Error().Err(err)
 			return
@@ -202,17 +202,17 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 	}
 
 	if n.isBlacklisted(msg.Question[0].Name) {
-		n.Log.Printf("%s did hit the blacklist", msg.Question[0].Name)
+		n.Log.Debug().Msgf("%s did hit the blacklist", msg.Question[0].Name)
 		RR, err := dns.NewRR(fmt.Sprintf("%s 3600 IN A 127.0.0.1", msg.Question[0].Name))
 		if err != nil {
-			n.Log.Print("udp parse msg error", err)
+			n.Log.Error().Err(err).Msg("faile to create blacklist response")
 			return
 		}
 		msg.Answer = append(msg.Answer, RR)
 		element := cache.Element{Value: msg.Answer, Refresh: false, Request: msg}
 		n.cache.Set(msg.Question[0].Name, element)
 		if err = n.packAndWrite(msg, pc, addr); err != nil {
-			n.Log.Error().Err(err)
+			n.Log.Error().Err(err).Msg("failed to send bl response")
 			return
 		}
 		return
@@ -222,6 +222,6 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 	element.Refresh = true
 	n.cache.Set(msg.Question[0].Name, element)
 
-	msg.Answer = append(msg.Answer, element.Value...)
+	msg.Answer = element.Value
 	n.packAndWrite(msg, pc, addr)
 }

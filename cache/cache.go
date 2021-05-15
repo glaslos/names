@@ -13,14 +13,14 @@ import (
 type Element struct {
 	Value     []dns.RR
 	Refresh   bool
-	TimeAdded int64
+	TimeAdded time.Time
 	Resolver  string
 	Request   *dns.Msg
 }
 
 // Config for the cache
 type Config struct {
-	ExpirationTime  int64
+	ExpirationTime  time.Duration
 	RefreshInterval time.Duration
 	RefreshFunc     func(cache *Cache)
 	Persist         bool
@@ -112,7 +112,8 @@ func (cache *Cache) Get(k string) (*Element, bool) {
 		return nil, false
 	}
 	if cache.config.ExpirationTime > 0 {
-		if time.Now().UnixNano()-cache.config.ExpirationTime > element.TimeAdded {
+		// adding the negative expiration time
+		if time.Now().Add(time.Duration(-cache.config.ExpirationTime)).After(element.TimeAdded) {
 			return nil, false
 		}
 	}
@@ -123,7 +124,7 @@ func (cache *Cache) Get(k string) (*Element, bool) {
 func (cache *Cache) Set(k string, v Element) {
 	cache.mutex.Lock()
 
-	v.TimeAdded = time.Now().UnixNano()
+	v.TimeAdded = time.Now()
 	cache.Elements[k] = v
 
 	cache.mutex.Unlock()

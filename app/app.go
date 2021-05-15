@@ -53,7 +53,7 @@ func main() {
 	config := names.Config{
 		ListenerAddress: viper.GetString("addr"),
 		CacheConfig: &cache.Config{
-			ExpirationTime:  (viper.GetDuration("cache-expiration") * time.Second).Nanoseconds(),
+			ExpirationTime:  viper.GetDuration("cache-expiration") * time.Second,
 			RefreshInterval: viper.GetDuration("cache-dns-refresh") * time.Second,
 			Persist:         viper.GetBool("cache-persist"),
 		},
