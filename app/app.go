@@ -32,9 +32,9 @@ func verifyAddr(addr string) error {
 func main() {
 	pflag.String("addr", "127.0.0.1:53", "Address the resolver listens on")
 	pflag.String("dns-client-net", "tcp-tls", "Net to use for DNS requests")
-	pflag.Duration("dns-client-timeout", 10, "DNS client request timeout")
-	pflag.Duration("cache-expiration", 10, "Cache entry expiration in seconds")
-	pflag.Duration("cache-dns-refresh", 60, "Cache value refresh in seconds")
+	pflag.Duration("dns-client-timeout", 2*time.Second, "DNS client request timeout")
+	pflag.Duration("cache-expiration", 10*time.Second, "Cache entry expiration in seconds")
+	pflag.Duration("cache-dns-refresh", 60*time.Second, "Cache value refresh in seconds")
 	pflag.Bool("cache-persist", false, "Set to persist cache to disk")
 	pflag.String("log-file", "./names.log", "Path to log file")
 	pflag.Int("log-max-size", 50, "Max log file size in MB")

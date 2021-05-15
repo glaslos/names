@@ -4,7 +4,8 @@ BUILDSTRING := $(shell git log --pretty=format:'%h' -n 1)
 VERSIONSTRING := $(NAME) version $(VERSION)+$(BUILDSTRING)
 
 BUILDDATE := $(shell date -u -Iseconds)
-OUTPUT = dist/$(NAME)-$(shell dpkg --print-architecture)-$(shell uname -s | awk '{print tolower($$0)}')
+OUTPUT = dist/$(NAME)-$(shell uname -m)-$(shell uname -s | awk '{print tolower($$0)}')
+OUTPUT_ARM = dist/$(NAME)-arm64-$(shell uname -s | awk '{print tolower($$0)}')
 
 LDFLAGS := "-X \"main.VERSIONSTRING=$(VERSIONSTRING)\" -X \"main.BUILDDATE=$(BUILDDATE)\" -X \"main.VERSION=$(VERSION)\""
 
@@ -12,7 +13,11 @@ LDFLAGS := "-X \"main.VERSIONSTRING=$(VERSIONSTRING)\" -X \"main.BUILDDATE=$(BUI
 build:
 	@mkdir -p dist/
 	cd app; go build -o ../$(OUTPUT) -ldflags=$(LDFLAGS)
-	cd -
+
+.PHONY: build-arm
+build-arm:
+	@mkdir -p dist/
+	cd app; env GOOS=linux GOARCH=arm64 go build -o ../$(OUTPUT_ARM) -ldflags=$(LDFLAGS)
 
 .PHONY: clean
 clean:
@@ -33,3 +38,6 @@ build_release: clean
 
 run:
 	go build -o names app/app.go; sudo ./names; rm names
+
+test:
+	go test ./...

@@ -49,11 +49,6 @@ type LoggerConfig struct {
 	Compress   bool
 }
 
-func (n *Names) stop() error {
-	n.Done <- true
-	return nil
-}
-
 // serve responses to DNS requests
 func (n *Names) serve() {
 	n.Log.Print("PID: ", os.Getpid())
@@ -125,7 +120,7 @@ func New(config *Config) (*Names, error) {
 		return n, errors.Wrap(err, "failed to setup cache")
 	}
 	// update the blacklists
-	if n.tree, err = loadLists(n.Log, n.tree, viper.GetBool("fetch-lists")); err != nil {
+	if n.tree, err = loadLists(n.Log, viper.GetBool("fetch-lists")); err != nil {
 		return n, errors.Wrap(err, "failed to fetch and update blacklist")
 	}
 	// create the listener
@@ -226,7 +221,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 	element := n.resolveUpstream(msg)
 	element.Refresh = true
 	n.cache.Set(msg.Question[0].Name, element)
-	n.Log.Debug().Str("query", msg.Question[0].Name).Str("resolver", element.Resolver).Msg("resolved")
 
+	msg.Answer = append(msg.Answer, element.Value...)
 	n.packAndWrite(msg, pc, addr)
 }

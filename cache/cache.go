@@ -41,10 +41,10 @@ func (cache *Cache) Save(path string) error {
 	gob.Register(dns.A{})
 	gob.Register(dns.CNAME{})
 	fh, err := os.Create(path)
-	defer fh.Close()
 	if err != nil {
 		return err
 	}
+	defer fh.Close()
 	return gob.NewEncoder(fh).Encode(cache.Elements)
 }
 
@@ -53,33 +53,27 @@ func (cache *Cache) Load(path string) error {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	fh, err := os.Open(path)
-	defer fh.Close()
 	if err != nil {
 		return err
 	}
+	defer fh.Close()
 	gob.Register(dns.A{})
 	gob.Register(dns.CNAME{})
 	return gob.NewDecoder(fh).Decode(&cache.Elements)
 }
 
 func (cache *Cache) refresh() {
-	tick := time.Tick(cache.config.RefreshInterval)
-	for {
-		select {
-		case <-tick:
-			cache.config.RefreshFunc(cache)
-		}
+	ticker := time.NewTicker(cache.config.RefreshInterval)
+	for range ticker.C {
+		cache.config.RefreshFunc(cache)
 	}
 }
 
 func (cache *Cache) dump() {
-	tick := time.Tick(cache.config.DumpInterval)
-	for {
-		select {
-		case <-tick:
-			if err := cache.Save("cache.dump"); err != nil {
-				println(err.Error())
-			}
+	ticker := time.NewTicker(cache.config.DumpInterval)
+	for range ticker.C {
+		if err := cache.Save("cache.dump"); err != nil {
+			println(err.Error())
 		}
 	}
 }
@@ -106,17 +100,6 @@ func New(config Config) (*Cache, error) {
 		go cache.refresh()
 	}
 	return cache, nil
-}
-
-func (cache *Cache) evict() {
-	cache.mutex.Lock()
-	defer cache.mutex.Unlock()
-	for k, v := range cache.Elements {
-		if time.Now().UnixNano()-cache.config.ExpirationTime > v.TimeAdded {
-			// deleting the expired element
-			delete(cache.Elements, k)
-		}
-	}
 }
 
 // Get an element from the cache

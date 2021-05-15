@@ -9,9 +9,8 @@ import (
 )
 
 func TestLists(t *testing.T) {
-	tree := trie.NewTrie()
 	logger := zerolog.Nop()
-	if _, err := loadLists(&logger, tree, false); err != nil {
+	if _, err := loadLists(&logger, false); err != nil {
 		t.Fatal(err)
 	}
 }
