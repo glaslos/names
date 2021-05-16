@@ -21,8 +21,8 @@ func isMark(r rune) bool {
 	return unicode.Is(unicode.Mn, r) || unicode.Is(unicode.Me, r) || unicode.Is(unicode.Mc, r)
 }
 
-// ReverseString reverses the input string while respecting UTF8 encoding and combined characters
-func ReverseString(text string) string {
+// reverseString reverses the input string while respecting UTF8 encoding and combined characters
+func reverseString(text string) string {
 	textRunes := []rune(text)
 	textRunesLength := len(textRunes)
 	if textRunesLength <= 1 {
@@ -51,7 +51,7 @@ func ReverseString(text string) string {
 }
 
 func (n *Names) isBlacklisted(name string) bool {
-	return n.tree.Has(ReverseString(strings.Trim(name, ".")))
+	return n.tree.Has(reverseString(strings.Trim(name, ".")))
 }
 
 func dumpLists(tree *trie.Trie) error {
@@ -72,6 +72,9 @@ func loadLists(log *zerolog.Logger, fetchFesh bool) (*trie.Trie, error) {
 		return tree, err
 	}
 	scanner := bufio.NewScanner(resp.Body)
+	defer resp.Body.Close()
+
+	var count int
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.Split(line, "#")[0]
@@ -83,11 +86,13 @@ func loadLists(log *zerolog.Logger, fetchFesh bool) (*trie.Trie, error) {
 			} else {
 				line = fields[0]
 			}
-			line = ReverseString(strings.Trim(line, "."))
+			line = reverseString(strings.Trim(line, "."))
 			if !tree.Has(line) {
 				tree.Add(line)
+				count++
 			}
 		}
 	}
+	log.Debug().Msgf("fetched %d new blocked domains", count)
 	return tree, dumpLists(tree)
 }

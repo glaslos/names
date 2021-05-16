@@ -11,7 +11,7 @@ func TestBlacklisted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n.tree.Add(ReverseString("google.com"))
+	n.tree.Add(reverseString("google.com"))
 	if !n.isBlacklisted("google.com") {
 		t.Fatal("should be blacklisted")
 	}

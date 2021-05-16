@@ -1,6 +1,7 @@
 module github.com/glaslos/names
 
 require (
+	github.com/benhoyt/goawk v1.7.0
 	github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f
 	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect

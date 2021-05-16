@@ -8,3 +8,4 @@ names
 *.log*
 dist/
 data/
+lists/
