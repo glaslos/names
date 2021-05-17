@@ -6,10 +6,12 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/glaslos/names/cache"
+	"github.com/glaslos/names/lists"
 	"github.com/spf13/viper"
 
 	"github.com/glaslos/trie"
@@ -119,9 +121,17 @@ func New(config *Config) (*Names, error) {
 	if err != nil {
 		return n, errors.Wrap(err, "failed to setup cache")
 	}
-	// update the blacklists
-	if n.tree, err = loadLists(n.Log, viper.GetBool("fetch-lists")); err != nil {
-		return n, errors.Wrap(err, "failed to fetch and update blacklist")
+	// update the blocklists
+	if n.tree, err = lists.Load(); err != nil {
+		return n, errors.Wrap(err, "failed to load blocklist")
+	}
+	if fetchList := viper.GetStringSlice("fetch-lists"); len(fetchList) > 0 {
+		if err := lists.PopulateCache(n.tree, fetchList, n.Log); err != nil {
+			return n, errors.Wrap(err, "failed to fetch and update blocklists")
+		}
+	}
+	if err := lists.Dump(n.tree); err != nil {
+		return n, errors.Wrap(err, "failed to dump block list to file")
 	}
 	// create the listener
 	n.PC, err = CreateListener(config.ListenerAddress)
@@ -145,6 +155,10 @@ func (n *Names) Run() {
 	go n.serve()
 	waitForSignals()
 	n.PC.Close()
+}
+
+func (n *Names) isBlocklisted(name string) bool {
+	return n.tree.Has(lists.ReverseString(strings.Trim(name, ".")))
 }
 
 func (n *Names) packAndWrite(msg *dns.Msg, pc net.PacketConn, addr net.Addr) error {
@@ -201,11 +215,11 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
 		return
 	}
 
-	if n.isBlacklisted(msg.Question[0].Name) {
-		n.Log.Debug().Msgf("%s did hit the blacklist", msg.Question[0].Name)
+	if n.isBlocklisted(msg.Question[0].Name) {
+		n.Log.Debug().Msgf("%s did hit the blocklist", msg.Question[0].Name)
 		RR, err := dns.NewRR(fmt.Sprintf("%s 3600 IN A 127.0.0.1", msg.Question[0].Name))
 		if err != nil {
-			n.Log.Error().Err(err).Msg("faile to create blacklist response")
+			n.Log.Error().Err(err).Msg("faile to create blocklist response")
 			return
 		}
 		msg.Answer = append(msg.Answer, RR)
