@@ -33,7 +33,7 @@ func Load() (*trie.Trie, error) {
 	return trie.LoadFromFile("lists.dump")
 }
 
-func decodeConfig() (map[string]sourceConfig, error) {
+func DecodeConfig() (map[string]sourceConfig, error) {
 	data, err := sources.Open("sources.json")
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func decodeConfig() (map[string]sourceConfig, error) {
 }
 
 func PopulateCache(tree *trie.Trie, lists []string, log *zerolog.Logger) error {
-	sourcesList, err := decodeConfig()
+	sourcesList, err := DecodeConfig()
 	if err != nil {
 		return err
 	}

@@ -3,11 +3,14 @@ package main
 import (
 	"errors"
 	"net"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/glaslos/names"
 	"github.com/glaslos/names/cache"
+	"github.com/glaslos/names/lists"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -42,9 +45,26 @@ func main() {
 	pflag.Int("log-max-age", 28, "Max age of log files")
 	pflag.Bool("log-compress", true, "Set to enable log file compression")
 	pflag.StringSlice("fetch-lists", []string{}, "Block lists to fetch")
+	pflag.Bool("list-blocklists", false, "Set to list all block lists")
 	pflag.StringSlice("upstreams", []string{"1.1.1.1:853", "9.9.9.9:853", "1.0.0.1:853", "8.8.4.4:853", "8.8.8.8:853"}, "Upstreams to resolve from")
 	viper.BindPFlags(pflag.CommandLine)
 	pflag.Parse()
+
+	if viper.GetBool("list-blocklists") {
+		listConfigs, err := lists.DecodeConfig()
+		if err != nil {
+			panic(err)
+		}
+
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Name", "Size", "Focus"})
+
+		for name, config := range listConfigs {
+			table.Append([]string{name, config.Size, config.Focus})
+		}
+		table.Render()
+		os.Exit(0)
+	}
 
 	if err := verifyAddr(viper.GetString("addr")); err != nil {
 		panic(err)

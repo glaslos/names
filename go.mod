@@ -8,6 +8,7 @@ require (
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/miekg/dns v1.1.42
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pelletier/go-toml v1.9.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.22.0
