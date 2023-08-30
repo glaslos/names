@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/benhoyt/goawk/interp"
@@ -30,7 +31,10 @@ func Dump(tree *trie.Trie) error {
 }
 
 func Load() (*trie.Trie, error) {
-	return trie.LoadFromFile("lists.dump")
+	if _, err := os.Stat("lists.dump"); err == nil {
+		return trie.LoadFromFile("lists.dump")
+	}
+	return trie.NewTrie(), nil
 }
 
 func DecodeConfig() (map[string]sourceConfig, error) {
