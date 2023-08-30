@@ -28,7 +28,7 @@ func (n *Names) resolveUpstream(msg *dns.Msg) cache.Element {
 		go n.resolv(msg, upstream, dataCh, stopCh)
 	}
 
-	element := cache.Element{}
+	var element cache.Element
 
 	for {
 		element = <-dataCh

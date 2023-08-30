@@ -20,24 +20,19 @@ func ReverseString(text string) string {
 	if textRunesLength <= 1 {
 		return text
 	}
-
 	i, j := 0, 0
 	for i < textRunesLength && j < textRunesLength {
 		j = i + 1
 		for j < textRunesLength && isMark(textRunes[j]) {
 			j++
 		}
-
 		if isMark(textRunes[j-1]) {
 			// Reverses Combined Characters
 			reverse(textRunes[i:j], j-i)
 		}
-
 		i = j
 	}
-
 	// Reverses the entire array
 	reverse(textRunes, textRunesLength)
-
 	return string(textRunes)
 }
