@@ -1,6 +1,6 @@
 # names
 
-Disclaimer: There is rearely a good reason to run your own DNS resolver...
+Disclaimer: There is rarely a good reason to run your own DNS resolver...
 
 ## Using
 
