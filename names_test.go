@@ -5,15 +5,14 @@ import (
 
 	"github.com/glaslos/names/cache"
 	"github.com/glaslos/names/lists"
+
+	"github.com/stretchr/testify/require"
 )
 
-func TestBlocklisted(t *testing.T) {
+func TestIsBlocklisted(t *testing.T) {
 	n, err := New(&Config{LoggerConfig: &LoggerConfig{}, CacheConfig: &cache.Config{}})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	n.tree.Add(lists.ReverseString("google.com"))
-	if !n.isBlocklisted("google.com") {
-		t.Fatal("should be blocklisted")
-	}
+	require.True(t, n.isBlocklisted("google.com"))
 }

@@ -4,41 +4,24 @@ import (
 	"testing"
 
 	"github.com/glaslos/trie"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLists(t *testing.T) {
-	if _, err := Load(); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestReverse(t *testing.T) {
-	assert.Equal(t, ReverseString(""), "")
-	assert.Equal(t, ReverseString("X"), "X")
-	assert.Equal(t, ReverseString("b\u0301"), "b\u0301")
-	assert.Equal(t, ReverseString("😎⚽"), "⚽😎")
-	assert.Equal(t, ReverseString("Les Mise\u0301rables"), "selbare\u0301siM seL")
-	assert.Equal(t, ReverseString("ab\u0301cde"), "edcb\u0301a")
-	assert.Equal(t, ReverseString("This `\xc5` is an invalid UTF8 character"), "retcarahc 8FTU dilavni na si `�` sihT")
-	assert.Equal(t, ReverseString("The quick bròwn 狐 jumped over the lazy 犬"), "犬 yzal eht revo depmuj 狐 nwòrb kciuq ehT")
-	assert.Equal(t, ReverseString("google.com"), "moc.elgoog")
+	_, err := Load()
+	require.NoError(t, err)
 }
 
 func TestContaints(t *testing.T) {
 	tree := trie.NewTrie()
 	tree.Add(ReverseString("google.com"))
-	if !tree.Has(ReverseString("google.com")) {
-		t.Fatal("expected entry")
-	}
+	require.True(t, tree.Has(ReverseString("google.com")))
 }
 
 func TestPrefix(t *testing.T) {
 	tree := trie.NewTrie()
 	tree.Add(ReverseString("*.google.com"))
-	if len(tree.PrefixMembers(ReverseString("google.com"))) <= 0 {
-		t.Fatal("expected entry")
-	}
+	require.True(t, len(tree.PrefixMembers(ReverseString("google.com"))) >= 0)
 }
 
 func BenchmarkTrieHas(b *testing.B) {

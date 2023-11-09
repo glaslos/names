@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"net"
 	"os"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"github.com/glaslos/names"
 	"github.com/glaslos/names/cache"
 	"github.com/glaslos/names/lists"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -53,7 +55,7 @@ func main() {
 	if viper.GetBool("list-blocklists") {
 		listConfigs, err := lists.DecodeConfig()
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
@@ -67,7 +69,7 @@ func main() {
 	}
 
 	if err := verifyAddr(viper.GetString("addr")); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	config := names.Config{
@@ -89,7 +91,7 @@ func main() {
 	}
 	n, err := names.New(&config)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	n.Run()
 	n.Log.Printf("exiting.\n")

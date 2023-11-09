@@ -12,7 +12,6 @@ import (
 
 	"github.com/glaslos/names/cache"
 	"github.com/glaslos/names/lists"
-	"github.com/spf13/viper"
 
 	"github.com/glaslos/trie"
 	"github.com/miekg/dns"
@@ -20,6 +19,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/diode"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -71,7 +71,11 @@ L:
 				n.Log.Print(err)
 				break L
 			}
-			go n.handleUDP(buf[:i], n.PC, addr)
+			go func() {
+				if err := n.handleUDP(buf[:i], n.PC, addr); err != nil {
+					n.Log.Error().Err(err).Msg("failed to unpack request")
+				}
+			}()
 		}
 	}
 	n.Log.Print("loop closed")
@@ -95,7 +99,11 @@ func makeLogger(config *LoggerConfig) *zerolog.Logger {
 
 func (n *Names) refreshCacheFunc(cache *cache.Cache) {
 	for domain, element := range cache.Elements {
-		resp := n.resolveUpstream(element.Request)
+		resp, err := n.resolveUpstream(element.Request)
+		if err != nil {
+			// handle error here?
+			return
+		}
 		n.cache.Set(domain, resp)
 	}
 }
@@ -164,78 +172,95 @@ func (n *Names) isBlocklisted(name string) bool {
 func (n *Names) packAndWrite(msg *dns.Msg, pc net.PacketConn, addr net.Addr) error {
 	data, err := msg.Pack()
 	if err != nil {
-		n.Log.Print("msg pack error", err)
-		return err
+		return fmt.Errorf("failed to msg pack: %w", err)
 	}
 	if _, err := pc.WriteTo(data, addr); err != nil {
-		n.Log.Print("msg write error", err)
-		return err
+		return fmt.Errorf("failed to write msg: %w", err)
 	}
 	return nil
 }
 
-func (n *Names) refreshCache(msg *dns.Msg) {
-	n.cache.Set(msg.Question[0].Name, n.resolveUpstream(msg))
+func validate(msg *dns.Msg) error {
+	if len(msg.Question) == 0 {
+		return errors.New("no question")
+	}
+	if msg.Question[0].Name == "" {
+		return errors.New("missing name")
+	}
+	return nil
 }
 
-func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) {
+func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
 	msg := new(dns.Msg)
-	var err error
 	if err := msg.Unpack(buf); err != nil {
-		n.Log.Error().Err(err).Msg("failed to unpack request")
-		return
+		return fmt.Errorf("failed to unpack request: %w", err)
+	}
+
+	if err := validate(msg); err != nil {
+		return err
 	}
 
 	if msg.Question[0].Name == "local." {
 		n.Log.Print(msg.Question[0].Name)
 		RR, err := dns.NewRR(fmt.Sprintf("%s 3600 IN A 127.0.0.1", msg.Question[0].Name))
 		if err != nil {
-			n.Log.Error().Err(err).Msg("failed to create local. response")
-			return
+			return fmt.Errorf("failed to create local. response: %w", err)
 		}
 		msg.Answer = append(msg.Answer, RR)
 		if err = n.packAndWrite(msg, pc, addr); err != nil {
-			n.Log.Error().Err(err)
-			return
+			return err
 		}
-		return
+		return nil
 	}
 
 	if element, cacheHit := n.cache.Get(msg.Question[0].Name); cacheHit {
 		msg.Answer = element.Value
 		n.Log.Debug().Msgf("cache hit: %s", msg.Question[0].Name)
-		if err = n.packAndWrite(msg, pc, addr); err != nil {
-			n.Log.Error().Err(err)
-			return
+		if err := n.packAndWrite(msg, pc, addr); err != nil {
+			return err
 		}
 		// Let's update the cache with the latest resolution
 		if element.Refresh {
-			go n.refreshCache(msg)
+			go func() {
+				element, err := n.resolveUpstream(msg)
+				if err != nil {
+					// handle error?
+					return
+				}
+				n.cache.Set(msg.Question[0].Name, element)
+			}()
 		}
-		return
+		return nil
 	}
 
 	if n.isBlocklisted(msg.Question[0].Name) {
 		n.Log.Debug().Msgf("%s did hit the blocklist", msg.Question[0].Name)
 		RR, err := dns.NewRR(fmt.Sprintf("%s 3600 IN A 127.0.0.1", msg.Question[0].Name))
 		if err != nil {
-			n.Log.Error().Err(err).Msg("faile to create blocklist response")
-			return
+			return errors.New("faile to create blocklist response")
 		}
 		msg.Answer = append(msg.Answer, RR)
-		element := cache.Element{Value: msg.Answer, Refresh: false, Request: msg}
-		n.cache.Set(msg.Question[0].Name, element)
+		go func() {
+			// set cache since it was a cache miss
+			element := cache.Element{Value: msg.Answer, Refresh: false, Request: msg}
+			n.cache.Set(msg.Question[0].Name, element)
+
+		}()
 		if err = n.packAndWrite(msg, pc, addr); err != nil {
-			n.Log.Error().Err(err).Msg("failed to send bl response")
-			return
+			return errors.New("failed to send bl response")
 		}
-		return
+		return nil
 	}
 
-	element := n.resolveUpstream(msg)
-	element.Refresh = true
-	n.cache.Set(msg.Question[0].Name, element)
+	element, err := n.resolveUpstream(msg)
+	if err != nil {
+		return err
+	}
+	go func() {
+		element.Refresh = true
+		n.cache.Set(msg.Question[0].Name, element)
+	}()
 
 	msg.Answer = element.Value
-	n.packAndWrite(msg, pc, addr)
+	return n.packAndWrite(msg, pc, addr)
 }

@@ -2,6 +2,7 @@ package names
 
 import (
 	"github.com/glaslos/names/cache"
+
 	"github.com/miekg/dns"
 	"github.com/spf13/viper"
 )
@@ -21,19 +22,14 @@ func (n *Names) resolv(msg *dns.Msg, upstream string, dataCh chan cache.Element,
 	}
 }
 
-func (n *Names) resolveUpstream(msg *dns.Msg) cache.Element {
+func (n *Names) resolveUpstream(msg *dns.Msg) (cache.Element, error) {
 	dataCh := make(chan cache.Element)
 	stopCh := make(chan struct{})
 	for _, upstream := range viper.GetStringSlice("upstreams") {
 		go n.resolv(msg, upstream, dataCh, stopCh)
 	}
 
-	var element cache.Element
-
-	for {
-		element = <-dataCh
-		close(stopCh)
-		break
-	}
-	return element
+	element := <-dataCh
+	close(stopCh)
+	return element, nil
 }
