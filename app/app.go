@@ -46,7 +46,7 @@ func main() {
 	pflag.Int("log-file-retention", 3, "Number of log files to keep")
 	pflag.Int("log-max-age", 28, "Max age of log files")
 	pflag.Bool("log-compress", true, "Set to enable log file compression")
-	pflag.StringSlice("fetch-lists", []string{}, "Block lists to fetch")
+	pflag.StringSlice("fetch-lists", []string{"adguard"}, "Block lists to fetch")
 	pflag.Bool("list-blocklists", false, "Set to list all block lists")
 	pflag.StringSlice("upstreams", []string{"1.1.1.1:853", "9.9.9.9:853", "1.0.0.1:853", "8.8.4.4:853", "8.8.8.8:853"}, "Upstreams to resolve from")
 	viper.BindPFlags(pflag.CommandLine)

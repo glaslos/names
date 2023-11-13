@@ -25,12 +25,12 @@ import (
 
 // Names main struct
 type Names struct {
-	cache     *cache.Cache
-	dnsClient dns.Client
-	tree      *trie.Trie
-	Log       *zerolog.Logger
-	PC        net.PacketConn
-	Done      chan bool
+	cache        *cache.Cache
+	dnsUpstreams []*dns.Conn
+	tree         *trie.Trie
+	Log          *zerolog.Logger
+	PC           net.PacketConn
+	Done         chan bool
 }
 
 // Config for names
@@ -113,18 +113,29 @@ func CreateListener(addr string) (net.PacketConn, error) {
 	return net.ListenPacket("udp", addr)
 }
 
+func (n *Names) makeUpstreams(config *Config) error {
+	for _, upstream := range viper.GetStringSlice("upstreams") {
+		conn, err := NewClient(config.DNSClientNet, upstream, config.DNSClientTimeout)
+		if err != nil {
+			return err
+		}
+		n.dnsUpstreams = append(n.dnsUpstreams, conn)
+	}
+	return nil
+}
+
 // New Names instance
 func New(config *Config) (*Names, error) {
 	n := &Names{
-		dnsClient: dns.Client{
-			Net:     config.DNSClientNet,
-			Timeout: config.DNSClientTimeout,
-		},
 		Log:  makeLogger(config.LoggerConfig),
 		tree: trie.NewTrie(),
 	}
-	var err error
+	if err := n.makeUpstreams(config); err != nil {
+		return nil, err
+	}
 	config.CacheConfig.RefreshFunc = n.refreshCacheFunc
+
+	var err error
 	n.cache, err = cache.New(*config.CacheConfig)
 	if err != nil {
 		return n, errors.Wrap(err, "failed to setup cache")
