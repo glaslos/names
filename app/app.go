@@ -40,7 +40,7 @@ func main() {
 	pflag.Duration("dns-client-timeout", 2*time.Second, "DNS client request timeout")
 	pflag.Duration("cache-expiration", 10*time.Second, "Cache entry expiration in seconds")
 	pflag.Duration("cache-dns-refresh", 60*time.Second, "Cache value refresh in seconds")
-	pflag.Bool("cache-persist", false, "Set to persist cache to disk")
+	pflag.Bool("cache-persist", true, "Set to persist cache to disk")
 	pflag.String("log-file", "./names.log", "Path to log file")
 	pflag.Int("log-max-size", 50, "Max log file size in MB")
 	pflag.Int("log-file-retention", 3, "Number of log files to keep")

@@ -11,7 +11,7 @@ import (
 
 // Element in the cache
 type Element struct {
-	Value     []dns.RR
+	Value     string
 	Refresh   bool
 	TimeAdded time.Time
 	Resolver  string
@@ -38,8 +38,6 @@ type Cache struct {
 func (cache *Cache) Save(path string) error {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
-	gob.Register(dns.A{})
-	gob.Register(dns.CNAME{})
 	fh, err := os.Create(path)
 	if err != nil {
 		return err
@@ -57,8 +55,6 @@ func (cache *Cache) Load(path string) error {
 		return err
 	}
 	defer fh.Close()
-	gob.Register(dns.A{})
-	gob.Register(dns.CNAME{})
 	return gob.NewDecoder(fh).Decode(&cache.Elements)
 }
 

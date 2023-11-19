@@ -73,7 +73,7 @@ L:
 			}
 			go func() {
 				if err := n.handleUDP(buf[:i], n.PC, addr); err != nil {
-					n.Log.Error().Err(err).Msg("failed to unpack request")
+					n.Log.Error().Err(err).Msg("failed to handle request")
 				}
 			}()
 		}
@@ -212,7 +212,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
 	}
 
 	if msg.Question[0].Name == "local." {
-		n.Log.Print(msg.Question[0].Name)
+		n.Log.Debug().Msgf("lookup: %s", msg.Question[0].Name)
 		RR, err := dns.NewRR(fmt.Sprintf("%s 3600 IN A 127.0.0.1", msg.Question[0].Name))
 		if err != nil {
 			return fmt.Errorf("failed to create local. response: %w", err)
@@ -225,7 +225,11 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
 	}
 
 	if element, cacheHit := n.cache.Get(msg.Question[0].Name); cacheHit {
-		msg.Answer = element.Value
+		rr, err := dns.NewRR(element.Value)
+		if err != nil {
+			return err
+		}
+		msg.Answer = []dns.RR{rr}
 		n.Log.Debug().Msgf("cache hit: %s", msg.Question[0].Name)
 		if err := n.packAndWrite(msg, pc, addr); err != nil {
 			return err
@@ -238,6 +242,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
 					// handle error?
 					return
 				}
+				n.Log.Debug().Msgf("Refreshed: %s", msg.Question[0].Name)
 				n.cache.Set(msg.Question[0].Name, element)
 			}()
 		}
@@ -253,7 +258,7 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
 		msg.Answer = append(msg.Answer, RR)
 		go func() {
 			// set cache since it was a cache miss
-			element := cache.Element{Value: msg.Answer, Refresh: false, Request: msg}
+			element := cache.Element{Value: msg.Answer[0].String(), Refresh: false, Request: msg}
 			n.cache.Set(msg.Question[0].Name, element)
 
 		}()
@@ -272,6 +277,10 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
 		n.cache.Set(msg.Question[0].Name, element)
 	}()
 
-	msg.Answer = element.Value
+	rr, err := dns.NewRR(element.Value)
+	if err != nil {
+		return err
+	}
+	msg.Answer = []dns.RR{rr}
 	return n.packAndWrite(msg, pc, addr)
 }

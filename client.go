@@ -15,16 +15,23 @@ func NewClient(network, address string, timeout time.Duration) (*dns.Conn, error
 }
 
 func (n *Names) resolv(msg *dns.Msg, upstream *dns.Conn, dataCh chan cache.Element, stopCh chan struct{}) {
-	m, err := dns.ExchangeConn(upstream, msg)
+	if err := upstream.WriteMsg(msg); err != nil {
+		n.Log.Error().Err(err)
+		return
+	}
+	m, err := upstream.ReadMsg()
 	if err != nil {
 		n.Log.Error().Err(err)
+		return
+	}
+	if len(m.Answer) == 0 {
 		return
 	}
 	select {
 	case <-stopCh:
 		return
 	default:
-		element := cache.Element{Value: m.Answer, Resolver: upstream.RemoteAddr().String(), Request: msg}
+		element := cache.Element{Value: m.Answer[0].String(), Resolver: upstream.RemoteAddr().String(), Request: msg}
 		dataCh <- element
 	}
 }
