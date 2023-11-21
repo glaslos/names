@@ -99,9 +99,14 @@ func makeLogger(config *LoggerConfig) *zerolog.Logger {
 
 func (n *Names) refreshCacheFunc(cache *cache.Cache) {
 	for domain, element := range cache.Elements {
-		resp, err := n.resolveUpstream(element.Request)
+		msg := dns.Msg{}
+		if err := msg.Unpack(element.Request); err != nil {
+			n.Log.Debug().Err(err)
+			return
+		}
+		resp, err := n.resolveUpstream(&msg)
 		if err != nil {
-			// handle error here?
+			n.Log.Debug().Err(err)
 			return
 		}
 		n.cache.Set(domain, resp)
@@ -230,7 +235,6 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
 			return err
 		}
 		msg.Answer = []dns.RR{rr}
-		n.Log.Debug().Msgf("cache hit: %s", msg.Question[0].Name)
 		if err := n.packAndWrite(msg, pc, addr); err != nil {
 			return err
 		}
@@ -258,7 +262,12 @@ func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
 		msg.Answer = append(msg.Answer, RR)
 		go func() {
 			// set cache since it was a cache miss
-			element := cache.Element{Value: msg.Answer[0].String(), Refresh: false, Request: msg}
+			buf, err := msg.Pack()
+			if err != nil {
+				n.Log.Debug().Err(err)
+				return
+			}
+			element := cache.Element{Value: msg.Answer[0].String(), Refresh: false, Request: buf}
 			n.cache.Set(msg.Question[0].Name, element)
 
 		}()

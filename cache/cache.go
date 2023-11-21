@@ -15,7 +15,7 @@ type Element struct {
 	Refresh   bool
 	TimeAdded time.Time
 	Resolver  string
-	Request   *dns.Msg
+	Request   []byte
 }
 
 // Config for the cache
@@ -43,6 +43,8 @@ func (cache *Cache) Save(path string) error {
 		return err
 	}
 	defer fh.Close()
+	gob.Register(dns.A{})
+	gob.Register(dns.CNAME{})
 	return gob.NewEncoder(fh).Encode(cache.Elements)
 }
 
@@ -55,6 +57,8 @@ func (cache *Cache) Load(path string) error {
 		return err
 	}
 	defer fh.Close()
+	gob.Register(dns.A{})
+	gob.Register(dns.CNAME{})
 	return gob.NewDecoder(fh).Decode(&cache.Elements)
 }
 
