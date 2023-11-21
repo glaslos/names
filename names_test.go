@@ -1,6 +1,7 @@
 package names
 
 import (
+	"context"
 	"testing"
 
 	"github.com/glaslos/names/cache"
@@ -10,7 +11,8 @@ import (
 )
 
 func TestIsBlocklisted(t *testing.T) {
-	n, err := New(&Config{LoggerConfig: &LoggerConfig{}, CacheConfig: &cache.Config{}})
+	cfg := &Config{LoggerConfig: &LoggerConfig{}, CacheConfig: &cache.Config{}}
+	n, err := New(context.Background(), cfg)
 	require.NoError(t, err)
 
 	n.tree.Add(lists.ReverseString("google.com"))

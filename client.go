@@ -1,7 +1,6 @@
 package names
 
 import (
-	"crypto/tls"
 	"errors"
 	"time"
 
@@ -9,11 +8,6 @@ import (
 
 	"github.com/miekg/dns"
 )
-
-func NewClient(network, address string, timeout time.Duration) (*dns.Conn, error) {
-	conf := &tls.Config{}
-	return dns.DialTimeoutWithTLS(network, address, conf, timeout)
-}
 
 func (n *Names) resolv(msg *dns.Msg, upstream *dns.Conn, dataCh chan cache.Element, stopCh chan struct{}) {
 	if err := upstream.SetWriteDeadline(time.Now().Add(2 * time.Second)); err != nil {

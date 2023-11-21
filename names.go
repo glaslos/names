@@ -1,6 +1,7 @@
 package names
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -25,6 +26,7 @@ import (
 
 // Names main struct
 type Names struct {
+	ctx          context.Context
 	cache        *cache.Cache
 	dnsUpstreams []*dns.Conn
 	tree         *trie.Trie
@@ -120,7 +122,7 @@ func CreateListener(addr string) (net.PacketConn, error) {
 
 func (n *Names) makeUpstreams(config *Config) error {
 	for _, upstream := range viper.GetStringSlice("upstreams") {
-		conn, err := NewClient(config.DNSClientNet, upstream, config.DNSClientTimeout)
+		conn, err := newConnection(n.ctx, config.DNSClientNet, upstream, config.DNSClientTimeout)
 		if err != nil {
 			return err
 		}
@@ -130,14 +132,31 @@ func (n *Names) makeUpstreams(config *Config) error {
 }
 
 // New Names instance
-func New(config *Config) (*Names, error) {
+func New(ctx context.Context, config *Config) (*Names, error) {
 	n := &Names{
+		ctx:  ctx,
 		Log:  makeLogger(config.LoggerConfig),
 		tree: trie.NewTrie(),
 	}
 	if err := n.makeUpstreams(config); err != nil {
 		return nil, err
 	}
+
+	ticker := time.NewTicker(20 * time.Second)
+	done := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				n.Log.Debug().Msg("Running tick")
+				n.aliveLoop(n.dnsUpstreams)
+			}
+		}
+	}()
+
 	config.CacheConfig.RefreshFunc = n.refreshCacheFunc
 
 	var err error

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net"
@@ -36,7 +37,7 @@ func verifyAddr(addr string) error {
 
 func main() {
 	pflag.String("addr", "127.0.0.1:53", "Address the resolver listens on")
-	pflag.String("dns-client-net", "tcp-tls", "Net to use for DNS requests")
+	pflag.String("dns-client-net", "tcp", "Net to use for DNS requests")
 	pflag.Duration("dns-client-timeout", 2*time.Second, "DNS client request timeout")
 	pflag.Duration("cache-expiration", 10*time.Second, "Cache entry expiration in seconds")
 	pflag.Duration("cache-dns-refresh", 60*time.Second, "Cache value refresh in seconds")
@@ -89,7 +90,7 @@ func main() {
 		DNSClientNet:     viper.GetString("dns-client-net"),
 		DNSClientTimeout: viper.GetDuration("dns-client-timeout") * time.Second,
 	}
-	n, err := names.New(&config)
+	n, err := names.New(context.Background(), &config)
 	if err != nil {
 		log.Fatal(err)
 	}
