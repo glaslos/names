@@ -4,27 +4,29 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/miekg/dns"
 )
 
-func (n *Names) aliveLoop(dnsUpstreams []*dns.Conn) {
+func (n *Names) aliveLoop(dnsUpstreams []*Upstream) {
 	for _, upstream := range dnsUpstreams {
-		alive, err := isAlive(upstream)
+		alive, err := isAlive(upstream.conn)
 		if err != nil {
 			n.Log.Error().Err(err)
 			continue
 		}
 		if !alive {
-			n.Log.Error().Msgf("closed connection: %s", upstream.Conn.RemoteAddr().String())
+			n.Log.Warn().Msgf("closed connection: %s", upstream.conn.Conn.RemoteAddr().String())
+			continue
 		}
 	}
 }
 
 func isAlive(conn net.Conn) (bool, error) {
 	var buf = [1]byte{}
-	if err := conn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
 		return false, err
 	}
 	_, err := conn.Read(buf[:])
@@ -37,20 +39,22 @@ func isAlive(conn net.Conn) (bool, error) {
 	return true, nil
 }
 
-func newConnection(ctx context.Context, network, address string, timeout time.Duration) (*dns.Conn, error) {
+func (n *Names) newConnection(ctx context.Context, network, address string, timeout time.Duration) (*dns.Conn, error) {
 	tlsDialer := tls.Dialer{
-		NetDialer: &net.Dialer{Timeout: timeout},
-		Config:    &tls.Config{},
+		NetDialer: &net.Dialer{
+			Timeout:   timeout,
+			KeepAlive: 15 * time.Second,
+		},
+		Config: &tls.Config{},
 	}
+
+	// attempt TLS connection
 	conn, err := tlsDialer.DialContext(ctx, network, address)
 	if err != nil {
-		return nil, err
+		n.Log.Warn().Err(err).Msg("failed to dial")
+	} else {
+		return &dns.Conn{Conn: conn}, nil
 	}
-	// if err := conn.(*net.TCPConn).SetKeepAlive(true); err != nil {
-	// 	return nil, err
-	// }
-	// if err := conn.(*net.TCPConn).SetKeepAlivePeriod(30 * time.Second); err != nil {
-	// 	return nil, err
-	// }
-	return &dns.Conn{Conn: conn}, nil
+	// fallback to UDP
+	return dns.DialTimeout("udp", strings.Split(address, ":")[0]+":53", timeout)
 }

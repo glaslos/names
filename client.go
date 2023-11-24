@@ -48,7 +48,7 @@ func (n *Names) resolveUpstream(msg *dns.Msg) (cache.Element, error) {
 	dataCh := make(chan cache.Element)
 	stopCh := make(chan struct{})
 	for _, upstream := range n.dnsUpstreams {
-		go n.resolv(msg, upstream, dataCh, stopCh)
+		go n.resolv(msg, upstream.conn, dataCh, stopCh)
 	}
 	ticker := time.NewTicker(4 * time.Second)
 	select {

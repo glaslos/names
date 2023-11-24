@@ -24,11 +24,16 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+type Upstream struct {
+	addr string
+	conn *dns.Conn
+}
+
 // Names main struct
 type Names struct {
 	ctx          context.Context
 	cache        *cache.Cache
-	dnsUpstreams []*dns.Conn
+	dnsUpstreams []*Upstream
 	tree         *trie.Trie
 	Log          *zerolog.Logger
 	PC           net.PacketConn
@@ -122,11 +127,15 @@ func CreateListener(addr string) (net.PacketConn, error) {
 
 func (n *Names) makeUpstreams(config *Config) error {
 	for _, upstream := range viper.GetStringSlice("upstreams") {
-		conn, err := newConnection(n.ctx, config.DNSClientNet, upstream, config.DNSClientTimeout)
+		conn, err := n.newConnection(n.ctx, config.DNSClientNet, upstream, config.DNSClientTimeout)
 		if err != nil {
-			return err
+			n.Log.Error().Err(err).Msg("failed to create upstream")
+			continue
 		}
-		n.dnsUpstreams = append(n.dnsUpstreams, conn)
+		n.dnsUpstreams = append(n.dnsUpstreams, &Upstream{
+			addr: upstream,
+			conn: conn,
+		})
 	}
 	return nil
 }
