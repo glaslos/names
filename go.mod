@@ -2,7 +2,7 @@ module github.com/glaslos/names
 
 require (
 	github.com/benhoyt/goawk v1.25.0
-	github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f
+	github.com/glaslos/trie v0.0.0-20231126130453-7ffb9d45e423
 	github.com/miekg/dns v1.1.56
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
@@ -13,7 +13,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
-go 1.21
+go 1.21.2
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect

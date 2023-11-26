@@ -67,6 +67,8 @@ github.com/fvbock/uds-go v0.0.0-20150825055119-e378dd1356b9 h1:PI8D0UwtC04m+FUaq
 github.com/fvbock/uds-go v0.0.0-20150825055119-e378dd1356b9/go.mod h1:J+KQJ2ZNVvd2gibb4nuUJbXVCSdKCFGn0ch/FI9xPlw=
 github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f h1:1btkc4YwPsFeSGNsBLPkHigD+A4aFZusEtdRpDoWiwA=
 github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f/go.mod h1:4iSrOq27By1AelYZoGItZhOHCES1ar9fe5aegY/Yo2Q=
+github.com/glaslos/trie v0.0.0-20231126130453-7ffb9d45e423 h1:Y+JadWH7vJdR6oLuLsE89ATGllTbuf86KPKp972qYXc=
+github.com/glaslos/trie v0.0.0-20231126130453-7ffb9d45e423/go.mod h1:Wq4qSL54P6qnuyl38YS674oHmh5Ki/BQeT7bfuK2owE=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
