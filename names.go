@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/netip"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -15,7 +17,7 @@ import (
 	"github.com/glaslos/names/lists"
 
 	"github.com/glaslos/trie"
-	"github.com/miekg/dns"
+	"github.com/phuslu/fastdns"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/diode"
@@ -25,8 +27,8 @@ import (
 )
 
 type Upstream struct {
-	addr string
-	conn *dns.Conn
+	addr   string
+	client *fastdns.Client
 }
 
 // Names main struct
@@ -104,14 +106,17 @@ func makeLogger(config *LoggerConfig) *zerolog.Logger {
 	return &log.Logger
 }
 
+func (n *Names) dummyRefreshCacheFunc(cache *cache.Cache) {}
+
 func (n *Names) refreshCacheFunc(cache *cache.Cache) {
 	for domain, element := range cache.Elements {
-		msg := dns.Msg{}
-		if err := msg.Unpack(element.Request); err != nil {
+		req := fastdns.AcquireMessage()
+		defer fastdns.ReleaseMessage(req)
+		if err := fastdns.ParseMessage(req, element.Request, true); err != nil {
 			n.Log.Debug().Err(err)
 			return
 		}
-		resp, err := n.resolveUpstream(&msg)
+		resp, err := n.resolveUpstream(req)
 		if err != nil {
 			n.Log.Debug().Err(err)
 			return
@@ -127,14 +132,21 @@ func CreateListener(addr string) (net.PacketConn, error) {
 
 func (n *Names) makeUpstreams(config *Config) error {
 	for _, upstream := range viper.GetStringSlice("upstreams") {
-		conn, err := n.newConnection(n.ctx, config.DNSClientNet, upstream, config.DNSClientTimeout)
+		server, sport, err := net.SplitHostPort(upstream)
 		if err != nil {
-			n.Log.Error().Err(err).Msg("failed to create upstream")
-			continue
+			return err
+		}
+		port, err := strconv.Atoi(sport)
+		if err != nil {
+			return err
+		}
+		client, err := newClient(server, int16(port))
+		if err != nil {
+			return err
 		}
 		n.dnsUpstreams = append(n.dnsUpstreams, &Upstream{
-			addr: upstream,
-			conn: conn,
+			addr:   upstream,
+			client: client,
 		})
 	}
 	return nil
@@ -151,22 +163,7 @@ func New(ctx context.Context, config *Config) (*Names, error) {
 		return nil, err
 	}
 
-	ticker := time.NewTicker(20 * time.Second)
-	done := make(chan bool)
-
-	go func() {
-		for {
-			select {
-			case <-done:
-				return
-			case <-ticker.C:
-				n.Log.Debug().Msg("Running tick")
-				n.aliveLoop(n.dnsUpstreams)
-			}
-		}
-	}()
-
-	config.CacheConfig.RefreshFunc = n.refreshCacheFunc
+	config.CacheConfig.RefreshFunc = n.dummyRefreshCacheFunc
 
 	var err error
 	n.cache, err = cache.New(*config.CacheConfig)
@@ -213,111 +210,117 @@ func (n *Names) isBlocklisted(name string) bool {
 	return n.tree.Has(lists.ReverseString(strings.Trim(name, ".")))
 }
 
-func (n *Names) packAndWrite(msg *dns.Msg, pc net.PacketConn, addr net.Addr) error {
-	data, err := msg.Pack()
-	if err != nil {
-		return fmt.Errorf("failed to msg pack: %w", err)
-	}
+func (n *Names) write(data []byte, pc net.PacketConn, addr net.Addr) error {
 	if _, err := pc.WriteTo(data, addr); err != nil {
 		return fmt.Errorf("failed to write msg: %w", err)
 	}
 	return nil
 }
 
-func validate(msg *dns.Msg) error {
-	if len(msg.Question) == 0 {
+func validateFast(msg *fastdns.Message) error {
+	if len(msg.Domain) == 0 {
 		return errors.New("no question")
-	}
-	if msg.Question[0].Name == "" {
-		return errors.New("missing name")
 	}
 	return nil
 }
 
-func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
-	msg := new(dns.Msg)
-	if err := msg.Unpack(buf); err != nil {
-		return fmt.Errorf("failed to unpack request: %w", err)
+func makeResponse(resp *fastdns.Message, addr string) (*fastdns.Message, error) {
+	ip, err := netip.ParseAddr(addr)
+	if err != nil {
+		return resp, err
 	}
+	ips := []netip.Addr{ip}
+	resp.SetResponseHeader(fastdns.RcodeNoError, uint16(len(ips)))
+	resp.Raw = fastdns.AppendHOSTRecord(resp.Raw, resp, 300, ips)
+	return resp, nil
+}
 
-	if err := validate(msg); err != nil {
+func (n *Names) handleUDP(buf []byte, pc net.PacketConn, addr net.Addr) error {
+	req := fastdns.AcquireMessage()
+	defer fastdns.ReleaseMessage(req)
+
+	if err := fastdns.ParseMessage(req, buf, true); err != nil {
 		return err
 	}
 
-	if msg.Question[0].Name == "local." {
-		n.Log.Debug().Msgf("lookup: %s", msg.Question[0].Name)
-		RR, err := dns.NewRR(fmt.Sprintf("%s 3600 IN A 127.0.0.1", msg.Question[0].Name))
+	if err := validateFast(req); err != nil {
+		return err
+	}
+
+	n.Log.Debug().Msgf("lookup: %v", string(req.Domain))
+
+	// local lookup
+	if strings.TrimSpace(string(req.Domain)) == "local" {
+		resp, err := makeResponse(req, "127.0.0.1")
 		if err != nil {
-			return fmt.Errorf("failed to create local. response: %w", err)
+			return err
 		}
-		msg.Answer = append(msg.Answer, RR)
-		if err = n.packAndWrite(msg, pc, addr); err != nil {
+		if err := n.write(resp.Raw, pc, addr); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	if element, cacheHit := n.cache.Get(msg.Question[0].Name); cacheHit {
-		rr, err := dns.NewRR(element.Value)
+	// cache hit?
+	if element, cacheHit := n.cache.Get(string(req.Domain)); cacheHit {
+		n.Log.Debug().Msg("cache hit")
+		resp, err := makeResponse(req, element.Value)
 		if err != nil {
 			return err
 		}
-		msg.Answer = []dns.RR{rr}
-		if err := n.packAndWrite(msg, pc, addr); err != nil {
+		if err := n.write(resp.Raw, pc, addr); err != nil {
 			return err
 		}
+
 		// Let's update the cache with the latest resolution
 		if element.Refresh {
 			go func() {
-				element, err := n.resolveUpstream(msg)
+				element, err := n.resolveUpstream(req)
 				if err != nil {
 					// handle error?
 					return
 				}
-				n.Log.Debug().Msgf("Refreshed: %s", msg.Question[0].Name)
-				n.cache.Set(msg.Question[0].Name, element)
+				n.Log.Debug().Msgf("Refreshed: %s", string(req.Domain))
+				n.cache.Set(string(req.Domain), element)
 			}()
 		}
 		return nil
 	}
 
-	if n.isBlocklisted(msg.Question[0].Name) {
-		n.Log.Debug().Msgf("%s did hit the blocklist", msg.Question[0].Name)
-		RR, err := dns.NewRR(fmt.Sprintf("%s 3600 IN A 127.0.0.1", msg.Question[0].Name))
+	// block list?
+	if n.isBlocklisted(string(req.Domain)) {
+		n.Log.Debug().Msgf("%s did hit the blocklist", string(req.Domain))
+		resp, err := makeResponse(req, "127.0.0.1")
 		if err != nil {
-			return errors.New("faile to create blocklist response")
+			return err
 		}
-		msg.Answer = append(msg.Answer, RR)
+		if err := n.write(resp.Raw, pc, addr); err != nil {
+			return err
+		}
 		go func() {
 			// set cache since it was a cache miss
-			buf, err := msg.Pack()
-			if err != nil {
-				n.Log.Debug().Err(err)
-				return
-			}
-			element := cache.Element{Value: msg.Answer[0].String(), Refresh: false, Request: buf}
-			n.cache.Set(msg.Question[0].Name, element)
+			element := cache.Element{Value: "127.0.0.1", Refresh: false, Request: buf}
+			n.cache.Set(string(req.Domain), element)
 
 		}()
-		if err = n.packAndWrite(msg, pc, addr); err != nil {
-			return errors.New("failed to send bl response")
-		}
 		return nil
 	}
 
-	element, err := n.resolveUpstream(msg)
+	// regular resolve
+	element, err := n.resolveUpstream(req)
 	if err != nil {
 		return err
 	}
+
+	resp, err := makeResponse(req, element.Value)
+	if err != nil {
+		return err
+	}
+
 	go func() {
 		element.Refresh = true
-		n.cache.Set(msg.Question[0].Name, element)
+		n.cache.Set(string(req.Domain), element)
 	}()
 
-	rr, err := dns.NewRR(element.Value)
-	if err != nil {
-		return err
-	}
-	msg.Answer = []dns.RR{rr}
-	return n.packAndWrite(msg, pc, addr)
+	return n.write(resp.Raw, pc, addr)
 }

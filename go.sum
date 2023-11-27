@@ -65,8 +65,6 @@ github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nos
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/fvbock/uds-go v0.0.0-20150825055119-e378dd1356b9 h1:PI8D0UwtC04m+FUaqB8RPOeuicjr896/afA5jlvpojA=
 github.com/fvbock/uds-go v0.0.0-20150825055119-e378dd1356b9/go.mod h1:J+KQJ2ZNVvd2gibb4nuUJbXVCSdKCFGn0ch/FI9xPlw=
-github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f h1:1btkc4YwPsFeSGNsBLPkHigD+A4aFZusEtdRpDoWiwA=
-github.com/glaslos/trie v0.0.0-20190501055606-5023a749603f/go.mod h1:4iSrOq27By1AelYZoGItZhOHCES1ar9fe5aegY/Yo2Q=
 github.com/glaslos/trie v0.0.0-20231126130453-7ffb9d45e423 h1:Y+JadWH7vJdR6oLuLsE89ATGllTbuf86KPKp972qYXc=
 github.com/glaslos/trie v0.0.0-20231126130453-7ffb9d45e423/go.mod h1:Wq4qSL54P6qnuyl38YS674oHmh5Ki/BQeT7bfuK2owE=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
@@ -165,6 +163,8 @@ github.com/olekukonko/tablewriter v0.0.5 h1:P2Ga83D34wi1o9J6Wh1mRuqd4mF/x/lgBS7N
 github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6HuIJcUGPhkA7kY=
 github.com/pelletier/go-toml/v2 v2.1.0 h1:FnwAJ4oYMvbT/34k9zzHuZNrhlz48GB3/s6at6/MHO4=
 github.com/pelletier/go-toml/v2 v2.1.0/go.mod h1:tJU2Z3ZkXwnxa4DPO899bsyIoywizdUvyaeZurnPPDc=
+github.com/phuslu/fastdns v0.8.2 h1:8nmUA1tkchCbMTeErsylbZayuD/PO1GsAeKikk/U2N4=
+github.com/phuslu/fastdns v0.8.2/go.mod h1:Y9eFI9EVo4Met2LJ/XqIczFmVb+VARgaz1VlaQDjFwg=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/sftp v1.13.1/go.mod h1:3HaPG6Dq1ILlpPZRO0HVMrsydcdLt6HRDccSgb87qRg=

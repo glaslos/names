@@ -49,7 +49,7 @@ func main() {
 	pflag.Bool("log-compress", true, "Set to enable log file compression")
 	pflag.StringSlice("fetch-lists", []string{"adguard"}, "Block lists to fetch")
 	pflag.Bool("list-blocklists", false, "Set to list all block lists")
-	pflag.StringSlice("upstreams", []string{"1.1.1.1:853", "9.9.9.9:853", "1.0.0.1:853", "8.8.4.4:853", "8.8.8.8:853"}, "Upstreams to resolve from")
+	pflag.StringSlice("upstreams", []string{"1.1.1.1:53", "9.9.9.9:53", "1.0.0.1:53", "8.8.4.4:53", "8.8.8.8:53"}, "Upstreams to resolve from")
 	viper.BindPFlags(pflag.CommandLine)
 	pflag.Parse()
 

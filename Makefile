@@ -1,4 +1,4 @@
-VERSION := v1.3.0-pre
+VERSION := v1.3.0
 NAME := names
 BUILDSTRING := $(shell git log --pretty=format:'%h' -n 1)
 VERSIONSTRING := $(NAME) version $(VERSION)+$(BUILDSTRING)
@@ -30,7 +30,7 @@ tag:
 
 .PHONY: upx
 upx:
-	cd dist/ && upx names-arm64-linux && upx names-x86_64-linux
+	cd dist/ && upx *
 
 .PHONY: build_release
 build_release: clean

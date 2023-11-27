@@ -5,6 +5,7 @@ require (
 	github.com/glaslos/trie v0.0.0-20231126130453-7ffb9d45e423
 	github.com/miekg/dns v1.1.56
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/phuslu/fastdns v0.8.2
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/pflag v1.0.5
