@@ -11,7 +11,7 @@ import (
 )
 
 func TestIsBlocklisted(t *testing.T) {
-	cfg := &Config{LoggerConfig: &LoggerConfig{}, CacheConfig: &cache.Config{}}
+	cfg := &Config{LoggerConfig: &LoggerConfig{}, CacheConfig: &cache.Config{RefreshCache: false}}
 	n, err := New(context.Background(), cfg)
 	require.NoError(t, err)
 

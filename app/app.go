@@ -79,6 +79,7 @@ func main() {
 			ExpirationTime:  viper.GetDuration("cache-expiration") * time.Second,
 			RefreshInterval: viper.GetDuration("cache-dns-refresh") * time.Second,
 			Persist:         viper.GetBool("cache-persist"),
+			RefreshCache:    true,
 		},
 		LoggerConfig: &names.LoggerConfig{
 			Filename:   viper.GetString("log-file"),

@@ -130,7 +130,7 @@ func CreateListener(addr string) (net.PacketConn, error) {
 	return net.ListenPacket("udp", addr)
 }
 
-func (n *Names) makeUpstreams(config *Config) error {
+func (n *Names) makeUpstreams() error {
 	for _, upstream := range viper.GetStringSlice("upstreams") {
 		server, sport, err := net.SplitHostPort(upstream)
 		if err != nil {
@@ -159,11 +159,16 @@ func New(ctx context.Context, config *Config) (*Names, error) {
 		Log:  makeLogger(config.LoggerConfig),
 		tree: trie.NewTrie(),
 	}
-	if err := n.makeUpstreams(config); err != nil {
+	if err := n.makeUpstreams(); err != nil {
 		return nil, err
 	}
 
-	config.CacheConfig.RefreshFunc = n.dummyRefreshCacheFunc
+	switch config.CacheConfig.RefreshCache {
+	case true:
+		config.CacheConfig.RefreshFunc = n.refreshCacheFunc
+	default:
+		config.CacheConfig.RefreshFunc = n.dummyRefreshCacheFunc
+	}
 
 	var err error
 	n.cache, err = cache.New(*config.CacheConfig)

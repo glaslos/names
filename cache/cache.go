@@ -25,6 +25,7 @@ type Config struct {
 	RefreshFunc     func(cache *Cache)
 	Persist         bool
 	DumpInterval    time.Duration
+	RefreshCache    bool
 }
 
 // Cache struct
